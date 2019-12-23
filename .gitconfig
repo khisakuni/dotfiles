@@ -1,0 +1,13 @@
+[alias]
+  co = checkout
+  st = status
+  br = branch
+  taglist = tag -l --sort=-v:refname
+  clearall = "!f() {git branch | grep -v "master" | grep -v ^* | xargs git branch -D}; f"
+[user]
+	name = khisakuni
+	email = khisakuni@gmail.com
+[credential]
+	helper = osxkeychain
+[core]
+	excludesfile = /Users/koheihisakuni/.gitignore_global
