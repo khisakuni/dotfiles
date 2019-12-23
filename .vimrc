@@ -6,6 +6,10 @@ set wildmode=longest,list,full
 set wildmenu
 set t_Co=256
 
+" Don't polute working directory with swap files.
+set backupdir=$HOME/.vim/swapfiles/
+set directory=$HOME/.vim/backups/
+
 " Reload the current buffer if changed externally.
 set autoread
 
@@ -42,19 +46,24 @@ Plugin 'scrooloose/nerdtree', { 'on': 'NERDTreeToggle' }
 Plugin 'isRuslan/vim-es6'
 
 " Go development environment
-Plugin 'fatih/vim-go', { 'do': ':GoInstallBinaries' }
+Plugin 'fatih/vim-go'
 
 " Ack to search files
 Plugin 'mileszs/ack.vim'
 
 " CtrlP for fuzzy finding files
-Plugin 'ctrlpvim/ctrlp.vim'
+" Plugin 'ctrlpvim/ctrlp.vim'
 
-" Color theme
-Plugin 'altercation/vim-colors-solarized'
+Plugin 'junegunn/fzf', { 'dir': '~/.fzf', 'do': './install --all' }
+Plugin 'junegunn/fzf.vim'
+
+Plugin 'jremmen/vim-ripgrep'
 
 " Use tab for insert complete
-Plugin 'ervandew/supertab'
+" Plugin 'ervandew/supertab'
+
+" Swift
+Plugin 'keith/swift.vim'
 
 " All of your Plugins must be added before the following line
 call vundle#end()            " required
@@ -89,14 +98,25 @@ let mapleader=";"
 " Mappings
 map <Leader>\ :NERDTreeToggle<CR>
 
+" Yank to clipboard
+map <Leader>c :w !pbcopy<CR><CR>
+
 set clipboard=unnamed
 
 " Display line numbers
 set number
 
 " Set color scheme
+let g:solarized_termcolors=256
+let g:solarized_termtrans = 16
+let g:solarized_bold = 1
+let g:solarized_underline = 1 
+let g:solarized_italic = 1
+let g:solarized_contrast = "high"
+let g:solarized_visibility= "high" 
 syntax enable
 set background=dark
+let g:solarized_termtrans = 1 " This gets rid of the grey background
 colorscheme solarized
 
 " Highlight search matches
@@ -135,17 +155,41 @@ fun! Start()
   nnoremap <buffer><silent> o :enew <bar> startinsert<CR>
 endfun
 
-" The Silver Searcher
-if executable('ag')
-  " Use ag over grep
-  set grepprg=ag\ --nogroup\ --nocolor
-
-  " Use ag in CtrlP for listing files. Lightning fast and respects .gitignore
-  let g:ctrlp_user_command = 'ag %s -l --nocolor -g ""'
-
-  " ag is fast enough that CtrlP doesn't need to cache
-  let g:ctrlp_use_caching = 0
+" Use ripgrep
+if executable("rg")
+  set grepprg=rg\ --vimgrep\ --no-heading
+  set grepformat=%f:%l:%c:%m,%f:%l:%m
 endif
+
+
+command! -bang -nargs=* Find call fzf#vim#grep('rg --column --line-number --no-heading --fixed-strings --ignore-case --no-ignore --hidden --follow --glob "!.git/*" --color "always" '.shellescape(<q-args>).'| tr -d "\017"', 1, <bang>0)
+
+set grepprg=rg\ --vimgrep
+
+nnoremap <C-p> :Files<Cr>
+
+" Automatically toggle paste/nopaste
+function! WrapForTmux(s)
+  if !exists('$TMUX')
+    return a:s
+  endif
+
+  let tmux_start = "\<Esc>Ptmux;"
+  let tmux_end = "\<Esc>\\"
+
+  return tmux_start . substitute(a:s, "\<Esc>", "\<Esc>\<Esc>", 'g') . tmux_end
+endfunction
+
+let &t_SI .= WrapForTmux("\<Esc>[?2004h")
+let &t_EI .= WrapForTmux("\<Esc>[?2004l")
+
+function! XTermPasteBegin()
+  set pastetoggle=<Esc>[201~
+  set paste
+  return ""
+endfunction
+
+inoremap <special> <expr> <Esc>[200~ XTermPasteBegin()
 
 if argc() == 0
   autocmd VimEnter * call Start()
